@@ -1,0 +1,238 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Heart, MapPin, Trash2, Plus, History } from "lucide-react";
+import { getFavoriteLocations, addFavoriteLocation, removeFavoriteLocation, getLocationHistory } from "@/lib/weather-api";
+import type { Location } from "@shared/schema";
+
+interface FavoritesManagerProps {
+  onLocationSelect: (location: { lat: number; lon: number; name: string }) => void;
+  currentLocation?: { lat: number; lon: number; name: string } | null;
+}
+
+export default function FavoritesManager({ onLocationSelect, currentLocation }: FavoritesManagerProps) {
+  const [activeTab, setActiveTab] = useState<"favorites" | "history">("favorites");
+  const queryClient = useQueryClient();
+  
+  // For now, we'll use null userId since we don't have user authentication
+  const userId = null;
+
+  const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
+    queryKey: ["/api/locations/favorites", userId],
+    queryFn: () => getFavoriteLocations(userId || undefined),
+  });
+
+  const { data: history = [], isLoading: historyLoading } = useQuery({
+    queryKey: ["/api/locations/history", userId],
+    queryFn: () => getLocationHistory(userId || undefined, 10),
+  });
+
+  const addFavoriteMutation = useMutation({
+    mutationFn: addFavoriteLocation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/locations/favorites"] });
+    },
+  });
+
+  const removeFavoriteMutation = useMutation({
+    mutationFn: ({ locationId }: { locationId: number }) => 
+      removeFavoriteLocation(locationId, userId || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/locations/favorites"] });
+    },
+  });
+
+  const handleAddCurrentToFavorites = async () => {
+    if (!currentLocation) return;
+    
+    try {
+      await addFavoriteMutation.mutateAsync({
+        name: currentLocation.name,
+        country: "Unknown", // We'll need to get this from the location data
+        state: null,
+        lat: currentLocation.lat,
+        lon: currentLocation.lon,
+        userId: userId ?? undefined,
+      });
+    } catch (error) {
+      console.error("Failed to add favorite:", error);
+    }
+  };
+
+  const handleRemoveFavorite = async (locationId: number) => {
+    try {
+      await removeFavoriteMutation.mutateAsync({ locationId });
+    } catch (error) {
+      console.error("Failed to remove favorite:", error);
+    }
+  };
+
+  const isCurrentLocationFavorited = currentLocation && favorites.some(
+    fav => Math.abs(fav.lat - currentLocation.lat) < 0.001 && Math.abs(fav.lon - currentLocation.lon) < 0.001
+  );
+
+  const formatLocationName = (location: Location) => {
+    let name = location.name;
+    if (location.state) {
+      name += `, ${location.state}`;
+    }
+    if (location.country) {
+      name += `, ${location.country}`;
+    }
+    return name;
+  };
+
+  return (
+    <div className="weather-card rounded-3xl p-6 mb-8" data-testid="favorites-manager">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-2xl font-semibold flex items-center">
+          <Heart className="w-6 h-6 text-red-500 mr-3" />
+          Locations
+        </h3>
+        
+        {currentLocation && !isCurrentLocationFavorited && (
+          <button
+            onClick={handleAddCurrentToFavorites}
+            disabled={addFavoriteMutation.isPending}
+            className="flex items-center px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            data-testid="button-add-current-favorite"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            {addFavoriteMutation.isPending ? "Adding..." : "Add Current"}
+          </button>
+        )}
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg">
+        <button
+          onClick={() => setActiveTab("favorites")}
+          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "favorites"
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          data-testid="tab-favorites"
+        >
+          <Heart className="w-4 h-4 mr-2" />
+          Favorites ({favorites.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "history"
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          data-testid="tab-history"
+        >
+          <History className="w-4 h-4 mr-2" />
+          Recent ({history.length})
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "favorites" && (
+        <div data-testid="favorites-list">
+          {favoritesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-pulse text-muted-foreground">Loading favorites...</div>
+            </div>
+          ) : favorites.length === 0 ? (
+            <div className="text-center py-8">
+              <Heart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-2">No favorite locations yet</p>
+              <p className="text-sm text-muted-foreground">
+                Add locations to quickly access their weather
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {favorites.map((location) => (
+                <div
+                  key={location.id}
+                  className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                  data-testid={`favorite-${location.id}`}
+                >
+                  <button
+                    onClick={() => onLocationSelect({
+                      lat: location.lat,
+                      lon: location.lon,
+                      name: formatLocationName(location)
+                    })}
+                    className="flex items-start flex-1 text-left hover:text-primary transition-colors"
+                    data-testid={`button-select-favorite-${location.id}`}
+                  >
+                    <MapPin className="w-4 h-4 mt-1 mr-3 text-muted-foreground flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">{location.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {location.state && `${location.state}, `}{location.country}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
+                      </p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleRemoveFavorite(location.id)}
+                    disabled={removeFavoriteMutation.isPending}
+                    className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                    data-testid={`button-remove-favorite-${location.id}`}
+                    title="Remove from favorites"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "history" && (
+        <div data-testid="history-list">
+          {historyLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-pulse text-muted-foreground">Loading history...</div>
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8">
+              <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-2">No location history yet</p>
+              <p className="text-sm text-muted-foreground">
+                Your recently viewed locations will appear here
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {history.map((location) => (
+                <button
+                  key={location.id}
+                  onClick={() => onLocationSelect({
+                    lat: location.lat,
+                    lon: location.lon,
+                    name: formatLocationName(location)
+                  })}
+                  className="flex items-start w-full text-left p-4 bg-muted/30 rounded-xl hover:bg-muted/50 hover:text-primary transition-colors"
+                  data-testid={`history-${location.id}`}
+                >
+                  <MapPin className="w-4 h-4 mt-1 mr-3 text-muted-foreground flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">{location.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {location.state && `${location.state}, `}{location.country}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

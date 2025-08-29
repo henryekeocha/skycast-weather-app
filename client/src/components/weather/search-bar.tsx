@@ -5,7 +5,7 @@ import { searchCities } from "@/lib/weather-api";
 import type { CitySearch } from "@shared/schema";
 
 interface SearchBarProps {
-  onLocationSelect: (location: { lat: number; lon: number; name: string }) => void;
+  onLocationSelect: (location: { lat: number; lon: number; name: string; cityData?: { name: string; country: string; state: string | null } }) => void;
 }
 
 export default function SearchBar({ onLocationSelect }: SearchBarProps) {
@@ -62,7 +62,13 @@ export default function SearchBar({ onLocationSelect }: SearchBarProps) {
     onLocationSelect({
       lat: city.lat,
       lon: city.lon,
-      name: locationName
+      name: locationName,
+      // Pass additional data for better history tracking
+      cityData: {
+        name: city.name,
+        country: city.country,
+        state: city.state || null
+      }
     });
     
     setSearchQuery("");

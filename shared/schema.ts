@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { pgTable, serial, varchar, text, integer, boolean, timestamp, real, index } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const weatherConditionSchema = z.object({
   id: z.number(),
@@ -170,6 +172,52 @@ export const weatherAlertsResponseSchema = z.object({
   alerts: z.array(weatherAlertSchema).optional(),
 });
 
+// Location history and favorites schemas
+export const locationSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  country: z.string(),
+  state: z.string().nullable(),
+  lat: z.number(),
+  lon: z.number(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const favoriteLocationSchema = z.object({
+  id: z.number(),
+  locationId: z.number(),
+  userId: z.string().nullable(), // For future user authentication
+  createdAt: z.date(),
+});
+
+export const locationHistorySchema = z.object({
+  id: z.number(),
+  locationId: z.number(),
+  userId: z.string().nullable(), // For future user authentication
+  visitCount: z.number(),
+  lastVisited: z.date(),
+});
+
+export const insertLocationSchema = z.object({
+  name: z.string(),
+  country: z.string(),
+  state: z.string().nullable(),
+  lat: z.number(),
+  lon: z.number(),
+});
+
+export const insertFavoriteLocationSchema = z.object({
+  locationId: z.number(),
+  userId: z.string().nullable(),
+});
+
+export const insertLocationHistorySchema = z.object({
+  locationId: z.number(),
+  userId: z.string().nullable(),
+  visitCount: z.number().default(1),
+});
+
 export type WeatherCondition = z.infer<typeof weatherConditionSchema>;
 export type CurrentWeather = z.infer<typeof currentWeatherSchema>;
 export type ForecastItem = z.infer<typeof forecastItemSchema>;
@@ -180,3 +228,66 @@ export type WeatherMapLayer = z.infer<typeof weatherMapLayerSchema>;
 export type WeatherMapConfig = z.infer<typeof weatherMapConfigSchema>;
 export type WeatherAlert = z.infer<typeof weatherAlertSchema>;
 export type WeatherAlertsResponse = z.infer<typeof weatherAlertsResponseSchema>;
+export type Location = z.infer<typeof locationSchema>;
+export type FavoriteLocation = z.infer<typeof favoriteLocationSchema>;
+export type LocationHistory = z.infer<typeof locationHistorySchema>;
+export type InsertLocation = z.infer<typeof insertLocationSchema>;
+export type InsertFavoriteLocation = z.infer<typeof insertFavoriteLocationSchema>;
+export type InsertLocationHistory = z.infer<typeof insertLocationHistorySchema>;
+
+// Database Tables
+export const locations = pgTable("locations", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  country: varchar("country", { length: 100 }).notNull(),
+  state: varchar("state", { length: 100 }),
+  lat: real("lat").notNull(),
+  lon: real("lon").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  coordIndex: index("locations_coord_idx").on(table.lat, table.lon),
+  nameIndex: index("locations_name_idx").on(table.name),
+}));
+
+export const favoriteLocations = pgTable("favorite_locations", {
+  id: serial("id").primaryKey(),
+  locationId: integer("location_id").references(() => locations.id).notNull(),
+  userId: varchar("user_id", { length: 255 }), // For future user authentication
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  locationIndex: index("favorite_locations_location_idx").on(table.locationId),
+  userIndex: index("favorite_locations_user_idx").on(table.userId),
+}));
+
+export const locationHistory = pgTable("location_history", {
+  id: serial("id").primaryKey(),
+  locationId: integer("location_id").references(() => locations.id).notNull(),
+  userId: varchar("user_id", { length: 255 }), // For future user authentication
+  visitCount: integer("visit_count").default(1).notNull(),
+  lastVisited: timestamp("last_visited").defaultNow().notNull(),
+}, (table) => ({
+  locationIndex: index("location_history_location_idx").on(table.locationId),
+  userIndex: index("location_history_user_idx").on(table.userId),
+  lastVisitedIndex: index("location_history_last_visited_idx").on(table.lastVisited),
+}));
+
+// Relations
+export const locationsRelations = relations(locations, ({ many }) => ({
+  favorites: many(favoriteLocations),
+  history: many(locationHistory),
+}));
+
+export const favoriteLocationsRelations = relations(favoriteLocations, ({ one }) => ({
+  location: one(locations, {
+    fields: [favoriteLocations.locationId],
+    references: [locations.id],
+  }),
+}));
+
+export const locationHistoryRelations = relations(locationHistory, ({ one }) => ({
+  location: one(locations, {
+    fields: [locationHistory.locationId],
+    references: [locations.id],
+  }),
+}));

@@ -7,12 +7,34 @@ import FiveDayForecast from "@/components/weather/five-day-forecast";
 import AirQuality from "@/components/weather/air-quality";
 import WeatherMap from "@/components/weather/weather-map";
 import WeatherAlerts from "@/components/weather/weather-alerts";
-import { getCurrentWeather, getForecast, getAirQuality, getWeatherAlerts } from "@/lib/weather-api";
+import FavoritesManager from "@/components/weather/favorites-manager";
+import { getCurrentWeather, getForecast, getAirQuality, getWeatherAlerts, addLocationToHistory } from "@/lib/weather-api";
 import type { CurrentWeather as CurrentWeatherType, Forecast, AirQuality as AirQualityType, WeatherAlertsResponse } from "@shared/schema";
 
 export default function Weather() {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number; name: string } | null>(null);
   const [weatherCondition, setWeatherCondition] = useState<string>("default");
+
+  const handleLocationSelect = async (locationData: any) => {
+    const location = { lat: locationData.lat, lon: locationData.lon, name: locationData.name };
+    setSelectedLocation(location);
+    
+    // Add to location history with better data if available
+    try {
+      const historyData = {
+        name: locationData.cityData?.name || locationData.name.split(',')[0].trim(),
+        country: locationData.cityData?.country || "Unknown",
+        state: locationData.cityData?.state,
+        lat: locationData.lat,
+        lon: locationData.lon,
+        userId: null, // No user authentication yet
+      };
+      
+      await addLocationToHistory(historyData);
+    } catch (error) {
+      console.error("Failed to add location to history:", error);
+    }
+  };
 
   // Get user's current location on mount
   useEffect(() => {
@@ -116,7 +138,12 @@ export default function Weather() {
             <p className="text-white/80 text-lg">Current conditions and 5-day forecast</p>
           </div>
           
-          <SearchBar onLocationSelect={setSelectedLocation} />
+          <SearchBar onLocationSelect={handleLocationSelect} />
+          
+          <FavoritesManager 
+            onLocationSelect={handleLocationSelect}
+            currentLocation={selectedLocation}
+          />
         </header>
 
         {/* Error State */}
