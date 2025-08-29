@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Heart, MapPin, Trash2, Plus, History } from "lucide-react";
+import { Heart, MapPin, Trash2, Plus, History, ChevronLeft, ChevronRight } from "lucide-react";
 import { getFavoriteLocations, addFavoriteLocation, removeFavoriteLocation, getLocationHistory } from "@/lib/weather-api";
 import type { Location } from "@shared/schema";
 
@@ -11,7 +11,11 @@ interface FavoritesManagerProps {
 
 export default function FavoritesManager({ onLocationSelect, currentLocation }: FavoritesManagerProps) {
   const [activeTab, setActiveTab] = useState<"favorites" | "history">("favorites");
+  const [favoritesPage, setFavoritesPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
   const queryClient = useQueryClient();
+  
+  const ITEMS_PER_PAGE = 5;
   
   // For now, we'll use null userId since we don't have user authentication
   const userId = null;
@@ -23,7 +27,7 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
 
   const { data: history = [], isLoading: historyLoading } = useQuery({
     queryKey: ["/api/locations/history", userId],
-    queryFn: () => getLocationHistory(userId || undefined, 10),
+    queryFn: () => getLocationHistory(userId || undefined, 50), // Get more items for pagination
   });
 
   const addFavoriteMutation = useMutation({
@@ -81,6 +85,66 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
     return name;
   };
 
+  // Pagination calculations
+  const favoritesPaginated = {
+    data: favorites.slice((favoritesPage - 1) * ITEMS_PER_PAGE, favoritesPage * ITEMS_PER_PAGE),
+    totalPages: Math.ceil(favorites.length / ITEMS_PER_PAGE),
+    currentPage: favoritesPage,
+    totalItems: favorites.length
+  };
+
+  const historyPaginated = {
+    data: history.slice((historyPage - 1) * ITEMS_PER_PAGE, historyPage * ITEMS_PER_PAGE),
+    totalPages: Math.ceil(history.length / ITEMS_PER_PAGE),
+    currentPage: historyPage,
+    totalItems: history.length
+  };
+
+  const PaginationControls = ({ 
+    currentPage, 
+    totalPages, 
+    onPageChange,
+    totalItems,
+    itemName
+  }: { 
+    currentPage: number; 
+    totalPages: number; 
+    onPageChange: (page: number) => void;
+    totalItems: number;
+    itemName: string;
+  }) => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+        <div className="text-sm text-muted-foreground">
+          {totalItems} {itemName}{totalItems !== 1 ? 's' : ''} • Page {currentPage} of {totalPages}
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid={`button-prev-${itemName}`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-sm font-medium px-2">
+            {currentPage}
+          </span>
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid={`button-next-${itemName}`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="weather-card rounded-3xl p-6 mb-8" data-testid="favorites-manager">
       <div className="flex items-center justify-between mb-6">
@@ -105,7 +169,10 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
       {/* Tab Navigation */}
       <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg">
         <button
-          onClick={() => setActiveTab("favorites")}
+          onClick={() => {
+            setActiveTab("favorites");
+            setFavoritesPage(1); // Reset to first page when switching tabs
+          }}
           className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === "favorites"
               ? "bg-card text-foreground shadow-sm"
@@ -117,7 +184,10 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
           Favorites ({favorites.length})
         </button>
         <button
-          onClick={() => setActiveTab("history")}
+          onClick={() => {
+            setActiveTab("history");
+            setHistoryPage(1); // Reset to first page when switching tabs
+          }}
           className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === "history"
               ? "bg-card text-foreground shadow-sm"
@@ -146,46 +216,56 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {favorites.map((location) => (
-                <div
-                  key={location.id}
-                  className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-                  data-testid={`favorite-${location.id}`}
-                >
-                  <button
-                    onClick={() => onLocationSelect({
-                      lat: location.lat,
-                      lon: location.lon,
-                      name: formatLocationName(location)
-                    })}
-                    className="flex items-start flex-1 text-left hover:text-primary transition-colors"
-                    data-testid={`button-select-favorite-${location.id}`}
+            <>
+              <div className="space-y-3">
+                {favoritesPaginated.data.map((location) => (
+                  <div
+                    key={location.id}
+                    className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                    data-testid={`favorite-${location.id}`}
                   >
-                    <MapPin className="w-4 h-4 mt-1 mr-3 text-muted-foreground flex-shrink-0" />
-                    <div>
-                      <p className="font-medium">{location.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {location.state && `${location.state}, `}{location.country}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
-                      </p>
-                    </div>
-                  </button>
-                  
-                  <button
-                    onClick={() => handleRemoveFavorite(location.id)}
-                    disabled={removeFavoriteMutation.isPending}
-                    className="text-muted-foreground hover:text-red-500 transition-colors p-1"
-                    data-testid={`button-remove-favorite-${location.id}`}
-                    title="Remove from favorites"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <button
+                      onClick={() => onLocationSelect({
+                        lat: location.lat,
+                        lon: location.lon,
+                        name: formatLocationName(location)
+                      })}
+                      className="flex items-start flex-1 text-left hover:text-primary transition-colors"
+                      data-testid={`button-select-favorite-${location.id}`}
+                    >
+                      <MapPin className="w-4 h-4 mt-1 mr-3 text-muted-foreground flex-shrink-0" />
+                      <div>
+                        <p className="font-medium">{location.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {location.state && `${location.state}, `}{location.country}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
+                        </p>
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={() => handleRemoveFavorite(location.id)}
+                      disabled={removeFavoriteMutation.isPending}
+                      className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                      data-testid={`button-remove-favorite-${location.id}`}
+                      title="Remove from favorites"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <PaginationControls
+                currentPage={favoritesPaginated.currentPage}
+                totalPages={favoritesPaginated.totalPages}
+                onPageChange={setFavoritesPage}
+                totalItems={favoritesPaginated.totalItems}
+                itemName="favorite"
+              />
+            </>
           )}
         </div>
       )}
@@ -205,31 +285,41 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {history.map((location) => (
-                <button
-                  key={location.id}
-                  onClick={() => onLocationSelect({
-                    lat: location.lat,
-                    lon: location.lon,
-                    name: formatLocationName(location)
-                  })}
-                  className="flex items-start w-full text-left p-4 bg-muted/30 rounded-xl hover:bg-muted/50 hover:text-primary transition-colors"
-                  data-testid={`history-${location.id}`}
-                >
-                  <MapPin className="w-4 h-4 mt-1 mr-3 text-muted-foreground flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">{location.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {location.state && `${location.state}, `}{location.country}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="space-y-3">
+                {historyPaginated.data.map((location) => (
+                  <button
+                    key={location.id}
+                    onClick={() => onLocationSelect({
+                      lat: location.lat,
+                      lon: location.lon,
+                      name: formatLocationName(location)
+                    })}
+                    className="flex items-start w-full text-left p-4 bg-muted/30 rounded-xl hover:bg-muted/50 hover:text-primary transition-colors"
+                    data-testid={`history-${location.id}`}
+                  >
+                    <MapPin className="w-4 h-4 mt-1 mr-3 text-muted-foreground flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">{location.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {location.state && `${location.state}, `}{location.country}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              
+              <PaginationControls
+                currentPage={historyPaginated.currentPage}
+                totalPages={historyPaginated.totalPages}
+                onPageChange={setHistoryPage}
+                totalItems={historyPaginated.totalItems}
+                itemName="location"
+              />
+            </>
           )}
         </div>
       )}
