@@ -135,9 +135,29 @@ export const airQualitySchema = z.object({
   })),
 });
 
+export const weatherMapLayerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  opacity: z.number().min(0).max(1),
+  type: z.enum(["precipitation", "clouds", "pressure", "temperature", "wind"]),
+});
+
+export const weatherMapConfigSchema = z.object({
+  center: z.object({
+    lat: z.number(),
+    lon: z.number(),
+  }),
+  zoom: z.number().min(1).max(18),
+  layers: z.array(weatherMapLayerSchema),
+});
+
 export type WeatherCondition = z.infer<typeof weatherConditionSchema>;
 export type CurrentWeather = z.infer<typeof currentWeatherSchema>;
 export type ForecastItem = z.infer<typeof forecastItemSchema>;
 export type Forecast = z.infer<typeof forecastSchema>;
 export type CitySearch = z.infer<typeof citySearchSchema>;
 export type AirQuality = z.infer<typeof airQualitySchema>;
+export type WeatherMapLayer = z.infer<typeof weatherMapLayerSchema>;
+export type WeatherMapConfig = z.infer<typeof weatherMapConfigSchema>;

@@ -215,6 +215,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get configuration for frontend
+  app.get("/api/config", (req, res) => {
+    res.json({
+      hasApiKey: !!OPENWEATHER_API_KEY,
+      apiKey: OPENWEATHER_API_KEY || null // Send the actual key for map tiles
+    });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

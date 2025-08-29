@@ -5,6 +5,7 @@ import CurrentWeather from "@/components/weather/current-weather";
 import WeatherDetails from "@/components/weather/weather-details";
 import FiveDayForecast from "@/components/weather/five-day-forecast";
 import AirQuality from "@/components/weather/air-quality";
+import WeatherMap from "@/components/weather/weather-map";
 import { getCurrentWeather, getForecast, getAirQuality } from "@/lib/weather-api";
 import type { CurrentWeather as CurrentWeatherType, Forecast, AirQuality as AirQualityType } from "@shared/schema";
 
@@ -143,6 +144,11 @@ export default function Weather() {
             <WeatherDetails weather={currentWeather} />
             
             {airQuality && <AirQuality airQuality={airQuality} />}
+            
+            <WeatherMap 
+              center={{ lat: selectedLocation?.lat || 40.7128, lon: selectedLocation?.lon || -74.006 }}
+              locationName={selectedLocation?.name || "Current Location"}
+            />
             
             {forecast && <FiveDayForecast forecast={forecast} />}
           </>
