@@ -63,6 +63,8 @@ export default function Weather() {
       
       // Invalidate location history cache to refetch updated list
       queryClient.invalidateQueries({ queryKey: ["/api/locations/history"] });
+      // Also refetch immediately to ensure fresh data
+      queryClient.refetchQueries({ queryKey: ["/api/locations/history"] });
     } catch (error) {
       console.error("Failed to add location to history:", error);
     }

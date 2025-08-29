@@ -28,6 +28,8 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
   const { data: history = [], isLoading: historyLoading } = useQuery({
     queryKey: ["/api/locations/history", userId],
     queryFn: () => getLocationHistory(userId || undefined, 50), // Get more items for pagination
+    staleTime: 0, // Always refetch to get the latest data
+    gcTime: 0, // Don't cache the data
   });
 
   const addFavoriteMutation = useMutation({
