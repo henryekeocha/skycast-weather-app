@@ -9,6 +9,8 @@ import WeatherMap from "@/components/weather/weather-map";
 import WeatherAlerts from "@/components/weather/weather-alerts";
 import FavoritesManager from "@/components/weather/favorites-manager";
 import Header from "@/components/weather/header";
+import AIInsights from "@/components/weather/ai-insights";
+import AIChat from "@/components/weather/ai-chat";
 import { getCurrentWeather, getForecast, getAirQuality, getWeatherAlerts, addLocationToHistory } from "@/lib/weather-api";
 import type { CurrentWeather as CurrentWeatherType, Forecast, AirQuality as AirQualityType, WeatherAlertsResponse } from "@shared/schema";
 import { useQueryClient } from "@tanstack/react-query";
@@ -228,6 +230,13 @@ export default function Weather() {
             
             {airQuality && <AirQuality airQuality={airQuality} />}
             
+            {/* AI-Powered Insights */}
+            <AIInsights 
+              currentWeather={currentWeather}
+              forecast={forecast}
+              locationName={selectedLocation?.name || "Current Location"}
+            />
+            
             <WeatherMap 
               center={{ lat: selectedLocation?.lat || 40.7128, lon: selectedLocation?.lon || -74.006 }}
               locationName={selectedLocation?.name || "Current Location"}
@@ -250,6 +259,13 @@ export default function Weather() {
           </div>
         </footer>
       </div>
+      
+      {/* AI Chat Assistant */}
+      <AIChat 
+        currentWeather={currentWeather}
+        forecast={forecast}
+        locationName={selectedLocation?.name || "Current Location"}
+      />
     </div>
   );
 }

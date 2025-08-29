@@ -5,6 +5,7 @@ import { currentWeatherSchema, forecastSchema, citySearchSchema, airQualitySchem
 import { storage } from "./storage";
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY || "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 if (!OPENWEATHER_API_KEY) {
   console.warn("Warning: OpenWeatherMap API key not found. Set OPENWEATHER_API_KEY or VITE_OPENWEATHER_API_KEY environment variable.");
@@ -513,6 +514,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       hasApiKey: !!OPENWEATHER_API_KEY,
       apiKey: OPENWEATHER_API_KEY || null // Send the actual key for map tiles
     });
+  });
+
+  // AI Weather Insights endpoint
+  app.post("/api/ai/weather-insights", async (req, res) => {
+    try {
+      const { weatherData, location, question } = req.body;
+      
+      if (!OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      const prompt = question ? 
+        `Answer this weather question based on the current conditions: "${question}"
+        
+Weather data for ${location}:
+${JSON.stringify(weatherData, null, 2)}
+
+Provide a helpful, conversational response.` :
+        `Analyze the weather conditions for ${location} and provide intelligent insights, recommendations, and a brief summary. Include:
+
+1. Current conditions summary
+2. What to expect today/tomorrow
+3. Activity recommendations
+4. What to wear/bring
+5. Any notable weather patterns
+
+Weather data:
+${JSON.stringify(weatherData, null, 2)}
+
+Keep the response conversational, helpful, and under 200 words.`;
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful weather assistant. Provide clear, practical advice based on weather data. Be conversational and focus on actionable insights."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          max_tokens: 300,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const insight = data.choices[0]?.message?.content || "Unable to generate weather insights at this time.";
+      
+      res.json({ insight, timestamp: new Date().toISOString() });
+    } catch (error) {
+      console.error("Error generating AI insights:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to generate AI insights" 
+      });
+    }
   });
 
   const httpServer = createServer(app);
