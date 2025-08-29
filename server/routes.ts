@@ -49,46 +49,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           searchVariations.push(withoutNumbers);
         }
         
-        // Try searching just the city if comma-separated address
-        const parts = query.split(',').map(p => p.trim());
-        if (parts.length >= 2) {
-          // Try last part (usually city/state)
-          searchVariations.push(parts[parts.length - 1]);
-          // Try second to last + last (city + state/country)
-          if (parts.length >= 2) {
-            searchVariations.push(`${parts[parts.length - 2]}, ${parts[parts.length - 1]}`);
-          }
-        }
+        // Enhanced address parsing for various formats
+        const parts = query.split(/[,\s]+/).filter(p => p.trim().length > 0);
         
-        // Try each variation
-        for (const variation of searchVariations) {
-          if (results.length > 0) break;
-          
-          const variationResponse = await fetch(
-            `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(variation)}&limit=5&appid=${OPENWEATHER_API_KEY}`
-          );
-          
-          if (variationResponse.ok) {
-            const variationData = await variationResponse.json();
-            if (variationData.length > 0) {
-              results = variationData;
-              break;
-            }
-          }
-        }
-      }
-
-      // Strategy 3: ZIP code search (if query looks like a ZIP code)
-      if (results.length === 0) {
+        // Extract ZIP code if present and try ZIP-based search first
         const zipMatch = query.match(/\b\d{5}(-\d{4})?\b/);
         if (zipMatch) {
+          // Try the area around the ZIP code
           const zipResponse = await fetch(
             `https://api.openweathermap.org/geo/1.0/zip?zip=${zipMatch[0]},US&appid=${OPENWEATHER_API_KEY}`
           );
           
           if (zipResponse.ok) {
             const zipData = await zipResponse.json();
-            // Convert ZIP response to match direct geocoding format
             results = [{
               name: zipData.name,
               lat: zipData.lat,
@@ -97,6 +70,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
               state: null
             }];
           }
+        }
+        
+        // If ZIP didn't work or no ZIP found, try address parsing
+        if (results.length === 0) {
+          // Try searching just the city if comma-separated address
+          const commaParts = query.split(',').map(p => p.trim());
+          if (commaParts.length >= 2) {
+            // Try last part (usually city/state)
+            searchVariations.push(commaParts[commaParts.length - 1]);
+            // Try second to last + last (city + state/country)
+            if (commaParts.length >= 2) {
+              searchVariations.push(`${commaParts[commaParts.length - 2]}, ${commaParts[commaParts.length - 1]}`);
+            }
+            // Try combinations with state abbreviations
+            if (commaParts.length >= 3) {
+              searchVariations.push(`${commaParts[commaParts.length - 3]}, ${commaParts[commaParts.length - 2]}, ${commaParts[commaParts.length - 1]}`);
+            }
+          }
+          
+          // Try extracting city names from space-separated parts
+          if (parts.length >= 3) {
+            // Common patterns: "123 Main St City State" or "123 Main Street City State ZIP"
+            const possibleCities = [];
+            
+            // Try last 2-3 parts as potential city/state combinations
+            if (parts.length >= 3) {
+              possibleCities.push(parts.slice(-2).join(' ')); // Last 2 parts
+            }
+            if (parts.length >= 4) {
+              possibleCities.push(parts.slice(-3, -1).join(' ')); // City name before state
+              possibleCities.push(parts.slice(-3).join(' ')); // Last 3 parts
+            }
+            
+            searchVariations.push(...possibleCities);
+          }
+          
+          // Try each variation
+          for (const variation of searchVariations) {
+            if (results.length > 0) break;
+            
+            if (variation && variation.length >= 2) {
+              const variationResponse = await fetch(
+                `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(variation)}&limit=5&appid=${OPENWEATHER_API_KEY}`
+              );
+              
+              if (variationResponse.ok) {
+                const variationData = await variationResponse.json();
+                if (variationData.length > 0) {
+                  results = variationData;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Strategy 3: Fallback to basic text search if still no results
+      if (results.length === 0 && query.length >= 3) {
+        // Try a very broad search with the full query
+        const fallbackResponse = await fetch(
+          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=3&appid=${OPENWEATHER_API_KEY}`
+        );
+        
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          results = fallbackData;
         }
       }
       
