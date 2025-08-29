@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { currentWeatherSchema, forecastSchema, citySearchSchema } from "@shared/schema";
+import { currentWeatherSchema, forecastSchema, citySearchSchema, airQualitySchema } from "@shared/schema";
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY || "";
 
@@ -178,6 +178,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching forecast:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to fetch forecast" 
+      });
+    }
+  });
+
+  // Get air quality by coordinates
+  app.get("/api/air-pollution/current", async (req, res) => {
+    try {
+      const { lat, lon } = req.query;
+      
+      if (!lat || !lon || typeof lat !== 'string' || typeof lon !== 'string') {
+        return res.status(400).json({ error: "Latitude and longitude parameters are required" });
+      }
+
+      if (!OPENWEATHER_API_KEY) {
+        return res.status(500).json({ error: "OpenWeatherMap API key not configured" });
+      }
+
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`OpenWeatherMap API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const validatedData = airQualitySchema.parse(data);
+      
+      res.json(validatedData);
+    } catch (error) {
+      console.error("Error fetching air quality:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch air quality data" 
       });
     }
   });

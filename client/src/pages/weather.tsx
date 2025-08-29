@@ -4,8 +4,9 @@ import SearchBar from "@/components/weather/search-bar";
 import CurrentWeather from "@/components/weather/current-weather";
 import WeatherDetails from "@/components/weather/weather-details";
 import FiveDayForecast from "@/components/weather/five-day-forecast";
-import { getCurrentWeather, getForecast } from "@/lib/weather-api";
-import type { CurrentWeather as CurrentWeatherType, Forecast } from "@shared/schema";
+import AirQuality from "@/components/weather/air-quality";
+import { getCurrentWeather, getForecast, getAirQuality } from "@/lib/weather-api";
+import type { CurrentWeather as CurrentWeatherType, Forecast, AirQuality as AirQualityType } from "@shared/schema";
 
 export default function Weather() {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number; name: string } | null>(null);
@@ -55,6 +56,13 @@ export default function Weather() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  const { data: airQuality, isLoading: airQualityLoading, error: airQualityError } = useQuery<AirQualityType>({
+    queryKey: ["/api/air-pollution/current", selectedLocation?.lat, selectedLocation?.lon],
+    queryFn: () => getAirQuality(selectedLocation!.lat, selectedLocation!.lon),
+    enabled: !!selectedLocation,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   // Update weather condition for gradient background
   useEffect(() => {
     if (currentWeather?.weather?.[0]) {
@@ -71,8 +79,8 @@ export default function Weather() {
     }
   }, [currentWeather]);
 
-  const isLoading = currentWeatherLoading || forecastLoading;
-  const hasError = currentWeatherError || forecastError;
+  const isLoading = currentWeatherLoading || forecastLoading || airQualityLoading;
+  const hasError = currentWeatherError || forecastError || airQualityError;
 
   return (
     <div className="min-h-screen relative">
@@ -133,6 +141,8 @@ export default function Weather() {
             />
             
             <WeatherDetails weather={currentWeather} />
+            
+            {airQuality && <AirQuality airQuality={airQuality} />}
             
             {forecast && <FiveDayForecast forecast={forecast} />}
           </>

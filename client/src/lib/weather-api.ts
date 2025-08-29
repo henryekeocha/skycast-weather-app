@@ -1,5 +1,5 @@
 import { apiRequest } from "./queryClient";
-import type { CurrentWeather, Forecast, CitySearch } from "@shared/schema";
+import type { CurrentWeather, Forecast, CitySearch, AirQuality } from "@shared/schema";
 
 export async function searchCities(query: string): Promise<CitySearch[]> {
   const response = await apiRequest("GET", `/api/cities/search?q=${encodeURIComponent(query)}`);
@@ -23,5 +23,10 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
 
 export async function getForecastByCity(city: string): Promise<Forecast> {
   const response = await apiRequest("GET", `/api/weather/forecast/${encodeURIComponent(city)}`);
+  return response.json();
+}
+
+export async function getAirQuality(lat: number, lon: number): Promise<AirQuality> {
+  const response = await apiRequest("GET", `/api/air-pollution/current?lat=${lat}&lon=${lon}`);
   return response.json();
 }

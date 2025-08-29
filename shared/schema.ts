@@ -112,8 +112,32 @@ export const citySearchSchema = z.object({
   state: z.string().optional(),
 });
 
+export const airQualitySchema = z.object({
+  coord: z.object({
+    lon: z.number(),
+    lat: z.number(),
+  }),
+  list: z.array(z.object({
+    main: z.object({
+      aqi: z.number(), // Air Quality Index: 1=Good, 2=Fair, 3=Moderate, 4=Poor, 5=Very Poor
+    }),
+    components: z.object({
+      co: z.number(),    // Carbon monoxide (μg/m³)
+      no: z.number(),    // Nitrogen monoxide (μg/m³) 
+      no2: z.number(),   // Nitrogen dioxide (μg/m³)
+      o3: z.number(),    // Ozone (μg/m³)
+      so2: z.number(),   // Sulphur dioxide (μg/m³)
+      pm2_5: z.number(), // Fine particles matter (μg/m³)
+      pm10: z.number(),  // Coarse particulate matter (μg/m³)
+      nh3: z.number(),   // Ammonia (μg/m³)
+    }),
+    dt: z.number(),
+  })),
+});
+
 export type WeatherCondition = z.infer<typeof weatherConditionSchema>;
 export type CurrentWeather = z.infer<typeof currentWeatherSchema>;
 export type ForecastItem = z.infer<typeof forecastItemSchema>;
 export type Forecast = z.infer<typeof forecastSchema>;
 export type CitySearch = z.infer<typeof citySearchSchema>;
+export type AirQuality = z.infer<typeof airQualitySchema>;
