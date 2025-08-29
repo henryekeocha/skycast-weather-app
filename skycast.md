@@ -1,4 +1,4 @@
-# Replit.md
+# SkyCast.md
 
 ## Overview
 
