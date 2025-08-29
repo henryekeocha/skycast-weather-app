@@ -15,10 +15,10 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
   const [historyPage, setHistoryPage] = useState(1);
   const queryClient = useQueryClient();
   
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 2; // Temporarily reduced to test pagination
   
-  // For now, we'll use null userId since we don't have user authentication
-  const userId = null;
+  // For now, we'll use undefined userId since we don't have user authentication
+  const userId = undefined;
 
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
     queryKey: ["/api/locations/favorites", userId],
@@ -52,10 +52,10 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
       await addFavoriteMutation.mutateAsync({
         name: currentLocation.name,
         country: "Unknown", // We'll need to get this from the location data
-        state: null,
+        state: undefined,
         lat: currentLocation.lat,
         lon: currentLocation.lon,
-        userId: userId ?? undefined,
+        userId: undefined,
       });
     } catch (error) {
       console.error("Failed to add favorite:", error);

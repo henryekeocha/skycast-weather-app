@@ -10,10 +10,12 @@ import WeatherAlerts from "@/components/weather/weather-alerts";
 import FavoritesManager from "@/components/weather/favorites-manager";
 import { getCurrentWeather, getForecast, getAirQuality, getWeatherAlerts, addLocationToHistory } from "@/lib/weather-api";
 import type { CurrentWeather as CurrentWeatherType, Forecast, AirQuality as AirQualityType, WeatherAlertsResponse } from "@shared/schema";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Weather() {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number; name: string } | null>(null);
   const [weatherCondition, setWeatherCondition] = useState<string>("default");
+  const queryClient = useQueryClient();
 
   const handleLocationSelect = async (locationData: any) => {
     const location = { lat: locationData.lat, lon: locationData.lon, name: locationData.name };
@@ -27,10 +29,13 @@ export default function Weather() {
         state: locationData.cityData?.state,
         lat: locationData.lat,
         lon: locationData.lon,
-        userId: null, // No user authentication yet
+        userId: undefined, // No user authentication yet
       };
       
       await addLocationToHistory(historyData);
+      
+      // Invalidate location history cache to refetch updated list
+      queryClient.invalidateQueries({ queryKey: ["/api/locations/history"] });
     } catch (error) {
       console.error("Failed to add location to history:", error);
     }
