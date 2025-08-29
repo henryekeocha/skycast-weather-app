@@ -237,6 +237,8 @@ export default function Weather() {
               locationName={selectedLocation?.name || "Current Location"}
             />
             
+            <div className="mb-8" />
+            
             <WeatherMap 
               center={{ lat: selectedLocation?.lat || 40.7128, lon: selectedLocation?.lon || -74.006 }}
               locationName={selectedLocation?.name || "Current Location"}
