@@ -178,7 +178,7 @@ export default function Weather() {
         <header className="mb-8">
           <div className="text-center mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Weather Dashboard</h2>
-            <p className="text-white/80 text-lg">Current conditions and 10-day forecast</p>
+            <p className="text-white/80 text-lg">Current conditions and 8-day forecast</p>
           </div>
           
           <SearchBar onLocationSelect={handleLocationSelect} />
