@@ -6,7 +6,5 @@ node_modules/
 .DS_Store
 .vscode/
 
-# Replit artifacts
-.replit
-replit.nix
+# Local artifacts
 .local/
