@@ -207,21 +207,20 @@ The application uses Drizzle ORM with PostgreSQL. Key tables include:
 
 ### Quick Deploy Options
 
-1. **Replit** (Recommended for quick setup)
-   - Fork the repository
-   - Set environment variables in Secrets
-   - Run `npm run dev`
-
-2. **Vercel**
+1. **Vercel**
    ```bash
    npm install -g vercel
    vercel --prod
    ```
-
-3. **Railway**
+2. **Railway**
    - Connect GitHub repository
    - Set environment variables
    - Deploy automatically
+
+3. **Render**
+   - Connect GitHub repository
+   - Set environment variables in dashboard
+   - Automatic deployments from main branch
 
 4. **Heroku**
    ```bash
