@@ -23,10 +23,34 @@ export default function Weather() {
     
     // Add to location history with better data if available
     try {
+      // Parse location name to extract city, state, and country
+      let name = locationData.name;
+      let country = undefined;
+      let state = undefined;
+      
+      // Check if we have cityData (from search) or need to parse name (from drag)
+      if (locationData.cityData) {
+        name = locationData.cityData.name || name.split(',')[0].trim();
+        country = locationData.cityData.country;
+        state = locationData.cityData.state;
+      } else {
+        // Parse from location name (format: "City, State, Country" or "City, Country")
+        const parts = name.split(',').map(part => part.trim());
+        if (parts.length >= 2) {
+          name = parts[0]; // First part is always the city
+          if (parts.length === 3) {
+            state = parts[1]; // Middle part is state
+            country = parts[2]; // Last part is country
+          } else {
+            country = parts[1]; // Last part is country (no state)
+          }
+        }
+      }
+      
       const historyData = {
-        name: locationData.cityData?.name || locationData.name.split(',')[0].trim(),
-        country: locationData.cityData?.country, // Let it be undefined, schema will default to "Unknown"
-        state: locationData.cityData?.state,
+        name,
+        country,
+        state,
         lat: locationData.lat,
         lon: locationData.lon,
         userId: undefined, // No user authentication yet
