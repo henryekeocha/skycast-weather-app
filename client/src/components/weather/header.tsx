@@ -24,7 +24,7 @@ export default function Header({ className }: HeaderProps) {
       <div className="flex items-center space-x-2">
         <div className="flex items-center space-x-1 text-white/80 text-sm">
           <Cloud className="w-4 h-4" />
-          <span>10-Day Forecast</span>
+          <span>8-Day Forecast</span>
         </div>
       </div>
     </nav>

@@ -74,7 +74,7 @@ export default function TenDayForecast({ forecast }: TenDayForecastProps) {
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-2xl font-semibold flex items-center">
           <Calendar className="w-6 h-6 text-primary mr-3" />
-          10-Day Forecast
+          8-Day Forecast
         </h3>
         
         {/* Temperature Unit Toggle */}
