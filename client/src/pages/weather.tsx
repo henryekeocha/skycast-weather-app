@@ -140,10 +140,12 @@ export default function Weather() {
           
           <SearchBar onLocationSelect={handleLocationSelect} />
           
-          <FavoritesManager 
-            onLocationSelect={handleLocationSelect}
-            currentLocation={selectedLocation}
-          />
+          <div className="mt-6">
+            <FavoritesManager 
+              onLocationSelect={handleLocationSelect}
+              currentLocation={selectedLocation}
+            />
+          </div>
         </header>
 
         {/* Error State */}
