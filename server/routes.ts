@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { currentWeatherSchema, forecastSchema, citySearchSchema, airQualitySchema } from "@shared/schema";
+import { currentWeatherSchema, forecastSchema, citySearchSchema, airQualitySchema, weatherAlertsResponseSchema } from "@shared/schema";
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY || "";
 
@@ -211,6 +211,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching air quality:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to fetch air quality data" 
+      });
+    }
+  });
+
+  // Get weather alerts by coordinates using One Call API 3.0
+  app.get("/api/weather/alerts", async (req, res) => {
+    try {
+      const { lat, lon } = req.query;
+      
+      if (!lat || !lon || typeof lat !== 'string' || typeof lon !== 'string') {
+        return res.status(400).json({ error: "Latitude and longitude parameters are required" });
+      }
+
+      if (!OPENWEATHER_API_KEY) {
+        return res.status(500).json({ error: "OpenWeatherMap API key not configured" });
+      }
+
+      const response = await fetch(
+        `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily&appid=${OPENWEATHER_API_KEY}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return res.status(404).json({ error: "Location not found" });
+        }
+        throw new Error(`OpenWeatherMap API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Extract only the alerts data with location info
+      const alertsData = {
+        lat: data.lat,
+        lon: data.lon,
+        timezone: data.timezone,
+        timezone_offset: data.timezone_offset,
+        alerts: data.alerts || []
+      };
+      
+      const validatedData = weatherAlertsResponseSchema.parse(alertsData);
+      
+      res.json(validatedData);
+    } catch (error) {
+      console.error("Error fetching weather alerts:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch weather alerts" 
       });
     }
   });

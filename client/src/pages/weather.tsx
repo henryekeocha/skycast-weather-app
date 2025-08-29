@@ -6,8 +6,9 @@ import WeatherDetails from "@/components/weather/weather-details";
 import FiveDayForecast from "@/components/weather/five-day-forecast";
 import AirQuality from "@/components/weather/air-quality";
 import WeatherMap from "@/components/weather/weather-map";
-import { getCurrentWeather, getForecast, getAirQuality } from "@/lib/weather-api";
-import type { CurrentWeather as CurrentWeatherType, Forecast, AirQuality as AirQualityType } from "@shared/schema";
+import WeatherAlerts from "@/components/weather/weather-alerts";
+import { getCurrentWeather, getForecast, getAirQuality, getWeatherAlerts } from "@/lib/weather-api";
+import type { CurrentWeather as CurrentWeatherType, Forecast, AirQuality as AirQualityType, WeatherAlertsResponse } from "@shared/schema";
 
 export default function Weather() {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number; name: string } | null>(null);
@@ -64,6 +65,13 @@ export default function Weather() {
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
+  const { data: weatherAlerts, isLoading: alertsLoading, error: alertsError } = useQuery<WeatherAlertsResponse>({
+    queryKey: ["/api/weather/alerts", selectedLocation?.lat, selectedLocation?.lon],
+    queryFn: () => getWeatherAlerts(selectedLocation!.lat, selectedLocation!.lon),
+    enabled: !!selectedLocation,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   // Update weather condition for gradient background
   useEffect(() => {
     if (currentWeather?.weather?.[0]) {
@@ -80,8 +88,8 @@ export default function Weather() {
     }
   }, [currentWeather]);
 
-  const isLoading = currentWeatherLoading || forecastLoading || airQualityLoading;
-  const hasError = currentWeatherError || forecastError || airQualityError;
+  const isLoading = currentWeatherLoading || forecastLoading || airQualityLoading || alertsLoading;
+  const hasError = currentWeatherError || forecastError || airQualityError || alertsError;
 
   return (
     <div className="min-h-screen relative">
@@ -140,6 +148,13 @@ export default function Weather() {
               weather={currentWeather} 
               locationName={selectedLocation?.name || ""} 
             />
+            
+            {weatherAlerts?.alerts && weatherAlerts.alerts.length > 0 && (
+              <WeatherAlerts 
+                alerts={weatherAlerts.alerts} 
+                locationName={selectedLocation?.name || "Current Location"}
+              />
+            )}
             
             <WeatherDetails weather={currentWeather} />
             

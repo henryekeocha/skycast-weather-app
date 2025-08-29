@@ -153,6 +153,23 @@ export const weatherMapConfigSchema = z.object({
   layers: z.array(weatherMapLayerSchema),
 });
 
+export const weatherAlertSchema = z.object({
+  sender_name: z.string(),
+  event: z.string(),
+  start: z.number(),
+  end: z.number(),
+  description: z.string(),
+  tags: z.array(z.string()).optional(),
+});
+
+export const weatherAlertsResponseSchema = z.object({
+  lat: z.number(),
+  lon: z.number(),
+  timezone: z.string(),
+  timezone_offset: z.number(),
+  alerts: z.array(weatherAlertSchema).optional(),
+});
+
 export type WeatherCondition = z.infer<typeof weatherConditionSchema>;
 export type CurrentWeather = z.infer<typeof currentWeatherSchema>;
 export type ForecastItem = z.infer<typeof forecastItemSchema>;
@@ -161,3 +178,5 @@ export type CitySearch = z.infer<typeof citySearchSchema>;
 export type AirQuality = z.infer<typeof airQualitySchema>;
 export type WeatherMapLayer = z.infer<typeof weatherMapLayerSchema>;
 export type WeatherMapConfig = z.infer<typeof weatherMapConfigSchema>;
+export type WeatherAlert = z.infer<typeof weatherAlertSchema>;
+export type WeatherAlertsResponse = z.infer<typeof weatherAlertsResponseSchema>;
