@@ -179,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get 5-day forecast by coordinates
+  // Get 10-day forecast by coordinates using One Call API
   app.get("/api/weather/forecast", async (req, res) => {
     try {
       const { lat, lon } = req.query;
@@ -192,8 +192,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "OpenWeatherMap API key not configured" });
       }
 
+      // Use One Call API 3.0 for extended daily forecast (up to 8 days)
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
+        `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&appid=${OPENWEATHER_API_KEY}&units=metric`
       );
 
       if (!response.ok) {
@@ -201,7 +202,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      const validatedData = forecastSchema.parse(data);
+      
+      // Transform One Call API response to match the expected forecast format
+      const transformedData = {
+        cod: "200",
+        message: 0,
+        cnt: data.daily.length,
+        list: data.daily.map((day: any, index: number) => ({
+          dt: day.dt,
+          main: {
+            temp: day.temp.day,
+            feels_like: day.feels_like.day,
+            temp_min: day.temp.min,
+            temp_max: day.temp.max,
+            pressure: day.pressure,
+            humidity: day.humidity,
+            temp_kf: 0
+          },
+          weather: day.weather,
+          clouds: {
+            all: day.clouds
+          },
+          wind: {
+            speed: day.wind_speed,
+            deg: day.wind_deg,
+            gust: day.wind_gust || 0
+          },
+          visibility: 10000,
+          pop: day.pop,
+          rain: day.rain ? { "3h": day.rain } : undefined,
+          snow: day.snow ? { "3h": day.snow } : undefined,
+          sys: {
+            pod: "d"
+          },
+          dt_txt: new Date(day.dt * 1000).toISOString()
+        })),
+        city: {
+          id: 0,
+          name: "Location",
+          coord: {
+            lat: parseFloat(lat),
+            lon: parseFloat(lon)
+          },
+          country: "Unknown",
+          population: 0,
+          timezone: data.timezone_offset,
+          sunrise: data.current?.sunrise || 0,
+          sunset: data.current?.sunset || 0
+        }
+      };
+      
+      const validatedData = forecastSchema.parse(transformedData);
       
       res.json(validatedData);
     } catch (error) {

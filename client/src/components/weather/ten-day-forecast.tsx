@@ -3,11 +3,11 @@ import { Calendar } from "lucide-react";
 import WeatherIcon from "./weather-icon";
 import type { Forecast } from "@shared/schema";
 
-interface FiveDayForecastProps {
+interface TenDayForecastProps {
   forecast: Forecast;
 }
 
-export default function FiveDayForecast({ forecast }: FiveDayForecastProps) {
+export default function TenDayForecast({ forecast }: TenDayForecastProps) {
   const [temperatureUnit, setTemperatureUnit] = useState<"celsius" | "fahrenheit">("celsius");
 
   const convertTemperature = (temp: number) => {
@@ -40,9 +40,9 @@ export default function FiveDayForecast({ forecast }: FiveDayForecastProps) {
     return acc;
   }, {} as Record<string, { date: Date; temps: number[]; weather: any; items: any[] }>);
 
-  // Get the next 5 days
+  // Get the next 10 days (or up to 8 from One Call API)
   const dailyData = Object.values(dailyForecasts)
-    .slice(0, 5)
+    .slice(0, 10)
     .map(day => ({
       date: day.date,
       maxTemp: convertTemperature(Math.max(...day.temps)),
@@ -70,11 +70,11 @@ export default function FiveDayForecast({ forecast }: FiveDayForecastProps) {
   };
 
   return (
-    <div className="weather-card rounded-3xl p-6 md:p-8" data-testid="card-five-day-forecast">
+    <div className="weather-card rounded-3xl p-6 md:p-8" data-testid="card-ten-day-forecast">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-2xl font-semibold flex items-center">
           <Calendar className="w-6 h-6 text-primary mr-3" />
-          5-Day Forecast
+          10-Day Forecast
         </h3>
         
         {/* Temperature Unit Toggle */}

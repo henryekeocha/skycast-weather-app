@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import SearchBar from "@/components/weather/search-bar";
 import CurrentWeather from "@/components/weather/current-weather";
 import WeatherDetails from "@/components/weather/weather-details";
-import FiveDayForecast from "@/components/weather/five-day-forecast";
+import TenDayForecast from "@/components/weather/ten-day-forecast";
 import AirQuality from "@/components/weather/air-quality";
 import WeatherMap from "@/components/weather/weather-map";
 import WeatherAlerts from "@/components/weather/weather-alerts";
@@ -35,7 +35,7 @@ export default function Weather() {
         state = locationData.cityData.state;
       } else {
         // Parse from location name (format: "City, State, Country" or "City, Country")
-        const parts = name.split(',').map(part => part.trim());
+        const parts = name.split(',').map((part: string) => part.trim());
         if (parts.length >= 2) {
           name = parts[0]; // First part is always the city
           if (parts.length === 3) {
@@ -224,7 +224,7 @@ export default function Weather() {
               onLocationChange={handleLocationSelect}
             />
             
-            {forecast && <FiveDayForecast forecast={forecast} />}
+            {forecast && <TenDayForecast forecast={forecast} />}
           </>
         )}
 
