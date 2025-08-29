@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Calendar } from "lucide-react";
 import WeatherIcon from "./weather-icon";
 import type { Forecast } from "@shared/schema";
@@ -7,6 +8,18 @@ interface FiveDayForecastProps {
 }
 
 export default function FiveDayForecast({ forecast }: FiveDayForecastProps) {
+  const [temperatureUnit, setTemperatureUnit] = useState<"celsius" | "fahrenheit">("celsius");
+
+  const convertTemperature = (temp: number) => {
+    if (temperatureUnit === "fahrenheit") {
+      return Math.round((temp * 9/5) + 32);
+    }
+    return Math.round(temp);
+  };
+
+  const toggleTemperatureUnit = () => {
+    setTemperatureUnit(prev => prev === "celsius" ? "fahrenheit" : "celsius");
+  };
   // Group forecast data by day and get daily min/max temperatures
   const dailyForecasts = forecast.list.reduce((acc, item) => {
     const date = new Date(item.dt * 1000);
@@ -32,8 +45,8 @@ export default function FiveDayForecast({ forecast }: FiveDayForecastProps) {
     .slice(0, 5)
     .map(day => ({
       date: day.date,
-      maxTemp: Math.round(Math.max(...day.temps)),
-      minTemp: Math.round(Math.min(...day.temps)),
+      maxTemp: convertTemperature(Math.max(...day.temps)),
+      minTemp: convertTemperature(Math.min(...day.temps)),
       weather: day.weather,
       // Use weather condition from midday if available, otherwise first item
       middayWeather: day.items.find(item => {
@@ -58,10 +71,38 @@ export default function FiveDayForecast({ forecast }: FiveDayForecastProps) {
 
   return (
     <div className="weather-card rounded-3xl p-6 md:p-8" data-testid="card-five-day-forecast">
-      <h3 className="text-2xl font-semibold mb-6 flex items-center">
-        <Calendar className="w-6 h-6 text-primary mr-3" />
-        5-Day Forecast
-      </h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-semibold flex items-center">
+          <Calendar className="w-6 h-6 text-primary mr-3" />
+          5-Day Forecast
+        </h3>
+        
+        {/* Temperature Unit Toggle */}
+        <div className="flex rounded-lg bg-muted p-1">
+          <button
+            onClick={toggleTemperatureUnit}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              temperatureUnit === "celsius"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            data-testid="button-forecast-celsius"
+          >
+            °C
+          </button>
+          <button
+            onClick={toggleTemperatureUnit}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              temperatureUnit === "fahrenheit"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            data-testid="button-forecast-fahrenheit"
+          >
+            °F
+          </button>
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {dailyData.map((day, index) => (
