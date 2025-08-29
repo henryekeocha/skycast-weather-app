@@ -20,6 +20,7 @@ export interface IStorage {
   isFavorite(locationId: number, userId?: string | null): Promise<boolean>;
   getLocationHistory(userId?: string | null, limit?: number): Promise<Location[]>;
   addToHistory(locationId: number, userId?: string | null): Promise<void>;
+  clearHistory(userId?: string | null): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -145,6 +146,12 @@ export class DatabaseStorage implements IStorage {
           visitCount: 1,
         });
     }
+  }
+
+  async clearHistory(userId?: string | null): Promise<void> {
+    await db
+      .delete(locationHistory)
+      .where(userId ? eq(locationHistory.userId, userId) : isNull(locationHistory.userId));
   }
 }
 

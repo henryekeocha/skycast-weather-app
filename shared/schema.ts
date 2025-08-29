@@ -202,7 +202,7 @@ export const locationHistorySchema = z.object({
 export const insertLocationSchema = z.object({
   name: z.string(),
   country: z.string().optional().default("Unknown"),
-  state: z.string().nullable(),
+  state: z.string().optional().nullable(),
   lat: z.number(),
   lon: z.number(),
 });

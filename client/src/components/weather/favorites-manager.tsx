@@ -45,6 +45,22 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
     },
   });
 
+  const clearHistoryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/locations/history", {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to clear history");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/locations/history"] });
+      setHistoryPage(1); // Reset to first page
+    },
+  });
+
   const handleAddCurrentToFavorites = async () => {
     if (!currentLocation) return;
     
@@ -67,6 +83,14 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
       await removeFavoriteMutation.mutateAsync({ locationId });
     } catch (error) {
       console.error("Failed to remove favorite:", error);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    try {
+      await clearHistoryMutation.mutateAsync();
+    } catch (error) {
+      console.error("Failed to clear history:", error);
     }
   };
 
@@ -286,6 +310,22 @@ export default function FavoritesManager({ onLocationSelect, currentLocation }: 
             </div>
           ) : (
             <>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm text-muted-foreground">
+                  {history.length} recent location{history.length !== 1 ? 's' : ''}
+                </div>
+                <button
+                  onClick={handleClearHistory}
+                  disabled={clearHistoryMutation.isPending}
+                  className="flex items-center px-3 py-2 text-sm text-muted-foreground hover:text-red-500 transition-colors"
+                  data-testid="button-clear-history"
+                  title="Clear all history"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  {clearHistoryMutation.isPending ? "Clearing..." : "Clear All"}
+                </button>
+              </div>
+              
               <div className="space-y-3">
                 {historyPaginated.data.map((location) => (
                   <button

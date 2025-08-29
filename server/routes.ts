@@ -379,6 +379,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear location history
+  app.delete("/api/locations/history", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      await storage.clearHistory(userId as string || null);
+      res.json({ success: true, message: "Location history cleared" });
+    } catch (error) {
+      console.error("Error clearing history:", error);
+      res.status(500).json({ error: "Failed to clear location history" });
+    }
+  });
+
   // Get configuration for frontend
   app.get("/api/config", (req, res) => {
     res.json({
