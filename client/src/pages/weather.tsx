@@ -152,14 +152,11 @@ export default function Weather() {
       {isLoading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="weather-card rounded-2xl p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <img 
-                src="/favicon.png" 
-                alt="SkyCast Logo" 
-                className="w-14 h-14 object-contain animate-pulse"
-                style={{ background: 'transparent' }}
-              />
-            </div>
+            <img 
+              src="/favicon.png" 
+              alt="SkyCast Logo" 
+              className="w-16 h-16 mx-auto mb-4 object-contain animate-pulse"
+            />
             <h2 className="text-2xl font-bold text-foreground mb-2">SkyCast</h2>
             <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mx-auto mb-4" />
             <p className="text-foreground font-medium">Loading weather data...</p>
