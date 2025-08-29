@@ -8,6 +8,7 @@ import AirQuality from "@/components/weather/air-quality";
 import WeatherMap from "@/components/weather/weather-map";
 import WeatherAlerts from "@/components/weather/weather-alerts";
 import FavoritesManager from "@/components/weather/favorites-manager";
+import Header from "@/components/weather/header";
 import { getCurrentWeather, getForecast, getAirQuality, getWeatherAlerts, addLocationToHistory } from "@/lib/weather-api";
 import type { CurrentWeather as CurrentWeatherType, Forecast, AirQuality as AirQualityType, WeatherAlertsResponse } from "@shared/schema";
 import { useQueryClient } from "@tanstack/react-query";
@@ -147,24 +148,33 @@ export default function Weather() {
       {/* Weather Background Gradient */}
       <div className={`fixed inset-0 -z-10 weather-gradient-${weatherCondition}`} />
       
-      {/* Loading Overlay */}
+      {/* Loading Overlay with SkyCast Branding */}
       {isLoading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="weather-card rounded-2xl p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-4" />
+            <img 
+              src="/favicon.png" 
+              alt="SkyCast Logo" 
+              className="w-16 h-16 mx-auto mb-4 animate-pulse"
+            />
+            <h2 className="text-2xl font-bold text-foreground mb-2">SkyCast</h2>
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mx-auto mb-4" />
             <p className="text-foreground font-medium">Loading weather data...</p>
           </div>
         </div>
       )}
 
+      {/* Navigation Header */}
+      <Header className="relative z-10" />
+      
       {/* Main Container */}
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         
-        {/* Header */}
+        {/* Search Section */}
         <header className="mb-8">
           <div className="text-center mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">SkyCast</h1>
-            <p className="text-white/80 text-lg">Current conditions and 5-day forecast</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Weather Dashboard</h2>
+            <p className="text-white/80 text-lg">Current conditions and 10-day forecast</p>
           </div>
           
           <SearchBar onLocationSelect={handleLocationSelect} />
