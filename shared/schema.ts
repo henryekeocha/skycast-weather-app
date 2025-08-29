@@ -26,7 +26,7 @@ export const currentWeatherSchema = z.object({
     sea_level: z.number().optional(),
     grnd_level: z.number().optional(),
   }),
-  visibility: z.number(),
+  visibility: z.number().optional(),
   wind: z.object({
     speed: z.number(),
     deg: z.number(),
