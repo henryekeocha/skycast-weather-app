@@ -23,7 +23,7 @@ export default function Weather() {
     try {
       const historyData = {
         name: locationData.cityData?.name || locationData.name.split(',')[0].trim(),
-        country: locationData.cityData?.country || "Unknown",
+        country: locationData.cityData?.country, // Let it be undefined, schema will default to "Unknown"
         state: locationData.cityData?.state,
         lat: locationData.lat,
         lon: locationData.lon,

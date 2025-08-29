@@ -71,7 +71,7 @@ export const forecastItemSchema = z.object({
     deg: z.number(),
     gust: z.number().optional(),
   }),
-  visibility: z.number(),
+  visibility: z.number().optional(),
   pop: z.number(),
   rain: z.object({
     "3h": z.number(),
@@ -201,7 +201,7 @@ export const locationHistorySchema = z.object({
 
 export const insertLocationSchema = z.object({
   name: z.string(),
-  country: z.string(),
+  country: z.string().optional().default("Unknown"),
   state: z.string().nullable(),
   lat: z.number(),
   lon: z.number(),
@@ -239,7 +239,7 @@ export type InsertLocationHistory = z.infer<typeof insertLocationHistorySchema>;
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  country: varchar("country", { length: 100 }).notNull(),
+  country: varchar("country", { length: 100 }).default("Unknown").notNull(),
   state: varchar("state", { length: 100 }),
   lat: real("lat").notNull(),
   lon: real("lon").notNull(),

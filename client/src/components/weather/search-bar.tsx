@@ -83,13 +83,26 @@ export default function SearchBar({ onLocationSelect }: SearchBarProps) {
           onLocationSelect({
             lat: position.coords.latitude,
             lon: position.coords.longitude,
-            name: "Current Location"
+            name: "Current Location",
+            cityData: {
+              name: "Current Location",
+              country: "Unknown",
+              state: null
+            }
           });
         },
         (error) => {
           console.error("Error getting location:", error);
+          alert("Unable to get your location. Please check your browser permissions.");
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
         }
       );
+    } else {
+      alert("Geolocation is not supported by this browser.");
     }
   };
 
