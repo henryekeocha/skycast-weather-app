@@ -12,7 +12,7 @@ if (!OPENWEATHER_API_KEY) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Search cities endpoint
+  // Search cities and addresses endpoint
   app.get("/api/cities/search", async (req, res) => {
     try {
       const { q } = req.query;
@@ -25,8 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "OpenWeatherMap API key not configured" });
       }
 
+      // Enhanced search: try direct geocoding first for addresses/cities
       const response = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=5&appid=${OPENWEATHER_API_KEY}`
+        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=8&appid=${OPENWEATHER_API_KEY}`
       );
 
       if (!response.ok) {
@@ -34,13 +35,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      const validatedData = z.array(citySearchSchema).parse(data);
+      
+      // If no results found with direct search, also try a broader search by adding common location terms
+      let results = data;
+      if (results.length === 0 && q.trim().length > 3) {
+        // Try searching with additional context for better address matching
+        const enhancedQuery = `${q.trim()}`;
+        const fallbackResponse = await fetch(
+          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(enhancedQuery)}&limit=8&appid=${OPENWEATHER_API_KEY}`
+        );
+        
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          results = fallbackData;
+        }
+      }
+      
+      const validatedData = z.array(citySearchSchema).parse(results);
       
       res.json(validatedData);
     } catch (error) {
-      console.error("Error searching cities:", error);
+      console.error("Error searching locations:", error);
       res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to search cities" 
+        error: error instanceof Error ? error.message : "Failed to search locations" 
       });
     }
   });

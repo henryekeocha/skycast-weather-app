@@ -113,7 +113,7 @@ export default function SearchBar({ onLocationSelect }: SearchBarProps) {
         <input
           ref={inputRef}
           type="text"
-          placeholder="Search for a city..."
+          placeholder="Search for a city or address..."
           className="search-input w-full pl-12 pr-12 py-4 rounded-2xl bg-card border border-border focus:ring-ring focus:border-ring outline-none text-foreground placeholder-muted-foreground text-lg"
           value={searchQuery}
           onChange={handleInputChange}
@@ -173,13 +173,13 @@ export default function SearchBar({ onLocationSelect }: SearchBarProps) {
             
             {cities && cities.length === 0 && debouncedQuery && !isLoading && (
               <div className="p-4 text-center text-muted-foreground">
-                No cities found matching "{debouncedQuery}"
+                No locations found matching "{debouncedQuery}"
               </div>
             )}
             
             {debouncedQuery.length < 2 && searchQuery.length >= 2 && (
               <div className="p-4 text-center text-muted-foreground">
-                Keep typing to search for cities...
+                Keep typing to search for locations...
               </div>
             )}
           </div>
