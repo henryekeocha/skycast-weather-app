@@ -197,6 +197,7 @@ export default function Weather() {
             <WeatherMap 
               center={{ lat: selectedLocation?.lat || 40.7128, lon: selectedLocation?.lon || -74.006 }}
               locationName={selectedLocation?.name || "Current Location"}
+              onLocationChange={handleLocationSelect}
             />
             
             {forecast && <FiveDayForecast forecast={forecast} />}

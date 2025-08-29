@@ -22,12 +22,14 @@ if (typeof window !== 'undefined') {
 interface WeatherMapProps {
   center: { lat: number; lon: number };
   locationName: string;
+  onLocationChange?: (location: { lat: number; lon: number; name: string }) => void;
 }
 
-export default function WeatherMap({ center, locationName }: WeatherMapProps) {
+export default function WeatherMap({ center, locationName, onLocationChange }: WeatherMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const layerRefs = useRef<{ [key: string]: any }>({});
+  const markerRef = useRef<any>(null);
   
   const [availableLayers] = useState<WeatherMapLayer[]>([
     {
@@ -101,11 +103,72 @@ export default function WeatherMap({ center, locationName }: WeatherMapProps) {
       maxZoom: 18,
     }).addTo(map);
 
-    // Add location marker
-    const locationMarker = L.marker([center.lat, center.lon])
+    // Add draggable location marker
+    const locationMarker = L.marker([center.lat, center.lon], {
+      draggable: true,
+      title: 'Drag to change location'
+    })
       .addTo(map)
-      .bindPopup(`<strong>${locationName}</strong><br>Weather Location`)
+      .bindPopup(`<strong>${locationName}</strong><br>Drag marker to change location`)
       .openPopup();
+    
+    markerRef.current = locationMarker;
+
+    // Handle marker drag events
+    locationMarker.on('dragend', async (e: any) => {
+      const newPosition = e.target.getLatLng();
+      const lat = newPosition.lat;
+      const lon = newPosition.lng;
+      
+      if (onLocationChange) {
+        // Try to get a readable location name using reverse geocoding
+        try {
+          const response = await fetch(
+            `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.length > 0) {
+              const location = data[0];
+              const newLocationName = location.state 
+                ? `${location.name}, ${location.state}, ${location.country}`
+                : `${location.name}, ${location.country}`;
+              
+              // Update popup with new location name
+              locationMarker.setPopupContent(`<strong>${newLocationName}</strong><br>Drag marker to change location`);
+              
+              onLocationChange({
+                lat,
+                lon,
+                name: newLocationName
+              });
+            } else {
+              // Fallback to coordinates if reverse geocoding fails
+              const coordName = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+              locationMarker.setPopupContent(`<strong>${coordName}</strong><br>Drag marker to change location`);
+              
+              onLocationChange({
+                lat,
+                lon,
+                name: coordName
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error with reverse geocoding:', error);
+          // Fallback to coordinates
+          const coordName = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          locationMarker.setPopupContent(`<strong>${coordName}</strong><br>Drag marker to change location`);
+          
+          onLocationChange({
+            lat,
+            lon,
+            name: coordName
+          });
+        }
+      }
+    });
 
     // Add weather layers
     activeLayers.forEach((layer) => {
