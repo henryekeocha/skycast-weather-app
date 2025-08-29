@@ -114,7 +114,7 @@ export default function FiveDayForecast({ forecast }: FiveDayForecastProps) {
             <p className="font-medium text-foreground mb-3" data-testid={`forecast-day-name-${index}`}>
               {formatDayName(day.date)}
             </p>
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center items-center h-8">
               <WeatherIcon
                 condition={day.middayWeather.main}
                 iconCode={day.middayWeather.icon}
