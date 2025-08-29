@@ -93,32 +93,33 @@ export default function WeatherMap({ center, locationName, onLocationChange }: W
   useEffect(() => {
     if (!mapRef.current || !L || !apiKey) return;
 
-    // Initialize map
-    const map = L.map(mapRef.current).setView([center.lat, center.lon], 8);
-    mapInstanceRef.current = map;
+    try {
+      // Initialize map
+      const map = L.map(mapRef.current).setView([center.lat, center.lon], 8);
+      mapInstanceRef.current = map;
 
-    // Add base tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 18,
-    }).addTo(map);
+      // Add base tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(map);
 
-    // Add draggable location marker
-    const locationMarker = L.marker([center.lat, center.lon], {
-      draggable: true,
-      title: 'Drag to change location'
-    })
-      .addTo(map)
-      .bindPopup(`<strong>${locationName}</strong><br>Drag marker to change location`)
-      .openPopup();
+      // Add draggable location marker
+      const locationMarker = L.marker([center.lat, center.lon], {
+        draggable: true,
+        title: 'Drag to change location'
+      })
+        .addTo(map)
+        .bindPopup(`<strong>${locationName}</strong><br>Drag marker to change location`)
+        .openPopup();
     
     markerRef.current = locationMarker;
 
     // Handle marker drag events
     locationMarker.on('dragend', async (e: any) => {
       const newPosition = e.target.getLatLng();
-      const lat = newPosition.lat;
-      const lon = newPosition.lng;
+      const lat = parseFloat(newPosition.lat.toFixed(6));
+      const lon = parseFloat(newPosition.lng.toFixed(6));
       
       if (onLocationChange) {
         // Try to get a readable location name using reverse geocoding
@@ -193,6 +194,10 @@ export default function WeatherMap({ center, locationName, onLocationChange }: W
         layerRefs.current = {};
       }
     };
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      return () => {};
+    }
   }, [center.lat, center.lon, locationName, apiKey]);
 
   // Update active layers when user toggles them
