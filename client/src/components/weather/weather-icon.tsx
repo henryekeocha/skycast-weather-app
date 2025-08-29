@@ -7,7 +7,10 @@ import {
   Cloudy,
   CloudDrizzle,
   Wind,
-  Haze
+  Haze,
+  CloudSun,
+  Snowflake,
+  CloudLightning
 } from "lucide-react";
 
 interface WeatherIconProps {
@@ -38,38 +41,40 @@ export default function WeatherIcon({
       case "clear":
         return {
           icon: Sun,
-          color: isNight ? "text-slate-300" : "text-accent"
+          color: isNight ? "text-blue-200" : "text-yellow-500"
         };
       case "clouds":
+        // Few clouds (02d/02n) - partly cloudy
         if (iconCode?.includes('02')) {
           return {
-            icon: Cloudy,
-            color: "text-muted-foreground"
+            icon: CloudSun,
+            color: "text-blue-400"
           };
         }
+        // Scattered clouds (03d/03n) or broken/overcast clouds (04d/04n)
         return {
           icon: Cloud,
-          color: "text-muted-foreground"
+          color: "text-gray-500"
         };
       case "rain":
         return {
           icon: CloudRain,
-          color: "text-rain"
+          color: "text-blue-600"
         };
       case "drizzle":
         return {
           icon: CloudDrizzle,
-          color: "text-rain"
+          color: "text-blue-500"
         };
       case "thunderstorm":
         return {
-          icon: Zap,
-          color: "text-yellow-500"
+          icon: CloudLightning,
+          color: "text-purple-500"
         };
       case "snow":
         return {
-          icon: CloudSnow,
-          color: "text-blue-200"
+          icon: Snowflake,
+          color: "text-blue-300"
         };
       case "mist":
       case "fog":
@@ -94,7 +99,7 @@ export default function WeatherIcon({
       default:
         return {
           icon: Sun,
-          color: "text-accent"
+          color: "text-yellow-500"
         };
     }
   };
