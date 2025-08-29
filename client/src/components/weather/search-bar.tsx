@@ -172,8 +172,19 @@ export default function SearchBar({ onLocationSelect }: SearchBarProps) {
             )}
             
             {cities && cities.length === 0 && debouncedQuery && !isLoading && (
-              <div className="p-4 text-center text-muted-foreground">
-                No locations found matching "{debouncedQuery}"
+              <div className="p-4 text-center">
+                <div className="text-muted-foreground mb-2">
+                  No locations found for "{debouncedQuery}"
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Try searching for:
+                  <ul className="text-left mt-1 space-y-1">
+                    <li>• City name: "New York"</li>
+                    <li>• City, State: "Austin, TX"</li>
+                    <li>• ZIP code: "10001"</li>
+                    <li>• Landmark: "Central Park"</li>
+                  </ul>
+                </div>
               </div>
             )}
             

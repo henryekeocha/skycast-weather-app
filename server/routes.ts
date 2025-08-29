@@ -25,29 +25,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "OpenWeatherMap API key not configured" });
       }
 
-      // Enhanced search: try direct geocoding first for addresses/cities
-      const response = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=8&appid=${OPENWEATHER_API_KEY}`
+      let results: any[] = [];
+      const query = q.trim();
+
+      // Strategy 1: Direct geocoding search
+      const directResponse = await fetch(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=8&appid=${OPENWEATHER_API_KEY}`
       );
 
-      if (!response.ok) {
-        throw new Error(`OpenWeatherMap API error: ${response.status}`);
+      if (directResponse.ok) {
+        const directData = await directResponse.json();
+        results = directData;
       }
 
-      const data = await response.json();
-      
-      // If no results found with direct search, also try a broader search by adding common location terms
-      let results = data;
-      if (results.length === 0 && q.trim().length > 3) {
-        // Try searching with additional context for better address matching
-        const enhancedQuery = `${q.trim()}`;
-        const fallbackResponse = await fetch(
-          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(enhancedQuery)}&limit=8&appid=${OPENWEATHER_API_KEY}`
-        );
+      // Strategy 2: If no results and looks like an address, try parsing and searching parts
+      if (results.length === 0 && query.length > 5) {
+        const searchVariations = [];
         
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          results = fallbackData;
+        // Try removing house numbers for street-level search
+        const withoutNumbers = query.replace(/^\d+\s+/, '');
+        if (withoutNumbers !== query) {
+          searchVariations.push(withoutNumbers);
+        }
+        
+        // Try searching just the city if comma-separated address
+        const parts = query.split(',').map(p => p.trim());
+        if (parts.length >= 2) {
+          // Try last part (usually city/state)
+          searchVariations.push(parts[parts.length - 1]);
+          // Try second to last + last (city + state/country)
+          if (parts.length >= 2) {
+            searchVariations.push(`${parts[parts.length - 2]}, ${parts[parts.length - 1]}`);
+          }
+        }
+        
+        // Try each variation
+        for (const variation of searchVariations) {
+          if (results.length > 0) break;
+          
+          const variationResponse = await fetch(
+            `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(variation)}&limit=5&appid=${OPENWEATHER_API_KEY}`
+          );
+          
+          if (variationResponse.ok) {
+            const variationData = await variationResponse.json();
+            if (variationData.length > 0) {
+              results = variationData;
+              break;
+            }
+          }
+        }
+      }
+
+      // Strategy 3: ZIP code search (if query looks like a ZIP code)
+      if (results.length === 0) {
+        const zipMatch = query.match(/\b\d{5}(-\d{4})?\b/);
+        if (zipMatch) {
+          const zipResponse = await fetch(
+            `https://api.openweathermap.org/geo/1.0/zip?zip=${zipMatch[0]},US&appid=${OPENWEATHER_API_KEY}`
+          );
+          
+          if (zipResponse.ok) {
+            const zipData = await zipResponse.json();
+            // Convert ZIP response to match direct geocoding format
+            results = [{
+              name: zipData.name,
+              lat: zipData.lat,
+              lon: zipData.lon,
+              country: zipData.country,
+              state: null
+            }];
+          }
         }
       }
       
