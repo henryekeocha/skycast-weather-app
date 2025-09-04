@@ -4,6 +4,7 @@ cat > .gitignore <<'EOF'
 *.log
 .vscode/
 .idea/
+.local/
 
 # Node
 node_modules/
