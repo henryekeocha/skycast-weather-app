@@ -1,0 +1,17 @@
+cat > .gitignore <<'EOF'
+# OS/editor
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Node
+node_modules/
+dist/
+.env
+.env.*
+npm-debug.log*
+
+# Build outputs
+coverage/
+EOF
