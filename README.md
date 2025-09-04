@@ -296,4 +296,4 @@ For issues and questions:
 
 ---
 
-**Note**: This application is for educational and personal use. Ensure compliance with API terms of service when deploying to production.
+**Note**: This application is for educational and personal use. When deploying it to production, ensure compliance with the API terms of service.
